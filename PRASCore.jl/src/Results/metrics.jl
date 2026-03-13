@@ -192,3 +192,31 @@ stderror(x::LOLD) = stderror(x.lold)
 function Base.show(io::IO, x::LOLD{N,L,T}) where {N,L,T}
     print(io, "LOLD = ", x.lold, " event-day")
 end
+
+
+"""
+    LOLEv
+
+`LOLEv` reports loss of load events over a particular time period
+and regional extent.
+
+Contains both the estimated value itself as well as the standard error
+of that estimate, which can be extracted with `val` and `stderror`,
+respectively.
+"""
+struct LOLEv{N, L, T <: Period} <: ReliabilityMetric
+    lolev::MeanEstimate
+
+    function LOLEv{N,L,T}(lolev::MeanEstimate) where {N,L,T<:Period}
+        val(lolev) >= 0 || throw(DomainError(val(lolev),
+            "$(val(lolev)) is not a valid expected count of events"))
+        new{N,L,T}(lolev)
+    end
+end
+
+val(x::LOLEv) = val(x.lolev)
+stderror(x::LOLEv) = stderror(x.lolev)
+
+function Base.show(io::IO, x::LOLEv{N,L,T}) where {N,L,T}
+    print(io, "LOLEv = ", x.lolev, " events")
+end

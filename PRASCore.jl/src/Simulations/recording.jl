@@ -510,3 +510,75 @@ function record!(
 end
 
 reset!(acc::Results.DemandResponseEnergySamplesAccumulator, sampleid::Int) = nothing
+
+
+# ShortfallEvents
+
+function record!(
+    acc::Results.ShortfallEventsAccumulator{S},
+    system::SystemModel{N,L,T,P,E},
+    state::SystemState, problem::DispatchProblem,
+    sampleid::Int, t::Int
+) where {N,L,T,P,E,S}
+
+    isshortfall = false
+    edges = problem.fp.edges
+
+    for (r, dr_idxs) in zip(problem.region_unserved_edges, system.region_dr_idxs)
+
+        regionshortfall = init_regionshortfall(S, edges, r)
+
+        dr_shortfall = 0
+        for i in dr_idxs
+            dr_shortfall += state.drs_unservedenergy[i]
+        end
+
+        regionshortfall += dr_shortfall
+        isregionshortfall = regionshortfall > 0
+
+        if isregionshortfall && !acc.in_region_event[r]
+            acc.in_region_event[r] = true
+            acc.region_event_start[r] = t
+        elseif !isregionshortfall && acc.in_region_event[r]
+            push!(acc.region_events[r, sampleid],
+                  Results.ShortfallEvent(acc.region_event_start[r], t - 1))
+            acc.in_region_event[r] = false
+            acc.region_event_start[r] = 0
+        end
+
+        isshortfall |= isregionshortfall
+    end
+
+    if isshortfall && !acc.in_system_event
+        acc.in_system_event = true
+        acc.system_event_start = t
+    elseif !isshortfall && acc.in_system_event
+        push!(acc.system_events[sampleid],
+              Results.ShortfallEvent(acc.system_event_start, t - 1))
+        acc.in_system_event = false
+        acc.system_event_start = 0
+    end
+
+    return
+end
+
+function reset!(acc::Results.ShortfallEventsAccumulator, sampleid::Int)
+
+    if acc.in_system_event
+        push!(acc.system_events[sampleid],
+              Results.ShortfallEvent(acc.system_event_start, acc.nperiods))
+        acc.in_system_event = false
+        acc.system_event_start = 0
+    end
+
+    for r in eachindex(acc.in_region_event)
+        if acc.in_region_event[r]
+            push!(acc.region_events[r, sampleid],
+                  Results.ShortfallEvent(acc.region_event_start[r], acc.nperiods))
+            acc.in_region_event[r] = false
+            acc.region_event_start[r] = 0
+        end
+    end
+
+    return
+end
