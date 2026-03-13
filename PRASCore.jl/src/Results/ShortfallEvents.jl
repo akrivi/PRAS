@@ -11,7 +11,6 @@ This result can be used to inspect event start/end times and to compute
 event-based reliability metrics such as [`LOLEv`](@ref).
 """
 struct ShortfallEvents <: ResultSpec end
-struct DemandResponseShortfallEvents <: ResultSpec end
 
 struct ShortfallEvent
     start_idx::Int
@@ -42,7 +41,7 @@ end
 
 function accumulator(
     sys::SystemModel{N}, nsamples::Int, ::S
-) where {N,S<:Union{ShortfallEvents,DemandResponseShortfallEvents}}
+) where {N,S<:Union{ShortfallEvents}}
 
     nregions = length(sys.regions)
 
@@ -71,7 +70,7 @@ function merge!(
 end
 
 accumulatortype(::S) where {
-        S<:Union{ShortfallEvents,DemandResponseShortfallEvents}
+        S<:Union{ShortfallEvents}
     } = ShortfallEventsAccumulator{S}
 
 struct ShortfallEventsResult{N,L,T<:Period,S} <: AbstractShortfallEventResult{N,L,T}
@@ -127,7 +126,7 @@ end
 function finalize(
     acc::ShortfallEventsAccumulator{S},
     system::SystemModel{N,L,T,P,E},
-) where {N,L,T,P,E,S<:Union{ShortfallEvents,DemandResponseShortfallEvents}}
+) where {N,L,T,P,E,S<:Union{ShortfallEvents}}
 
     return ShortfallEventsResult{N,L,T,S}(
         system.regions, system.timestamps,

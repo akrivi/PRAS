@@ -42,4 +42,8 @@ PRASCore.Results.DemandResponseAvailability
 PRASCore.Results.DemandResponseEnergy
 PRASCore.Results.DemandResponseEnergySamples
 PRASCore.Results.LineAvailability
+PRASCore.Results.LOLD
+PRASCore.Results.ShortfallEvents
+PRASCore.Results.LOLEv
+PRASCore.Results.MeanEventDuration
 ```
