@@ -640,5 +640,30 @@
         @test val(lold_3) >= val(regional_lold_3)
     end
 
+    @testset "Shortfall Event Metrics" begin
+
+        @testset "Shortfall Event Metrics" begin
+            # Single-region system
+            @test val(LOLEv(events_1a)) >= 0
+            @test stderror(LOLEv(events_1a)) >= 0
+            @test val(MeanEventDuration(events_1a)) >= 0
+            @test stderror(MeanEventDuration(events_1a)) >= 0
+    
+            @test LOLEv(events_1a) ≈ LOLEv(events_1a, "Region")
+            @test MeanEventDuration(events_1a) ≈ MeanEventDuration(events_1a, "Region")
+    
+            # Multi-region system
+            @test val(LOLEv(events_3)) >= 0
+            @test val(MeanEventDuration(events_3)) >= 0
+            @test val(LOLEv(events_3, "Region A")) >= 0
+            @test val(MeanEventDuration(events_3, "Region A")) >= 0
+    
+            @test val(LOLEv(events_3)) >= val(LOLEv(events_3, "Region A"))
+    
+            @test PRAS.PRASCore.Results.totalevents(events_1a) >= 0
+            @test PRAS.PRASCore.Results.totalevents(events_3, "Region A") >= 0
+        end
+    end
+
 
 end
