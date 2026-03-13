@@ -133,3 +133,30 @@ function finalize(
         system.regions, system.timestamps,
         acc.system_events, acc.region_events)
 end
+
+function MeanEventDuration(x::ShortfallEventsResult{N,L,T}) where {N,L,T}
+    durations = Float64[
+        isempty(events) ? 0.0 : mean(duration_periods.(events))
+        for events in x.system_events
+    ]
+    return MeanEventDuration{N,L,T}(MeanEstimate(durations))
+end
+
+function MeanEventDuration(x::ShortfallEventsResult{N,L,T}, r::AbstractString) where {N,L,T}
+    i_r = findfirstunique(x.regions.names, r)
+    durations = Float64[
+        isempty(x.region_events[i_r, s]) ? 0.0 :
+            mean(duration_periods.(x.region_events[i_r, s]))
+        for s in axes(x.region_events, 2)
+    ]
+    return MeanEventDuration{N,L,T}(MeanEstimate(durations))
+end
+
+function totalevents(x::ShortfallEventsResult)
+    return sum(length, x.system_events)
+end
+
+function totalevents(x::ShortfallEventsResult, r::AbstractString)
+    i_r = findfirstunique(x.regions.names, r)
+    return sum(length, view(x.region_events, i_r, :))
+end

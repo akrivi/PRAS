@@ -220,3 +220,37 @@ stderror(x::LOLEv) = stderror(x.lolev)
 function Base.show(io::IO, x::LOLEv{N,L,T}) where {N,L,T}
     print(io, "LOLEv = ", x.lolev, " events")
 end
+
+
+"""
+    MeanEventDuration
+
+`MeanEventDuration` reports the expected average duration of shortfall
+events over a particular time period and regional extent.
+
+For each sample, the mean duration of all events in that sample
+is computed. Samples with no events are assigned a duration of 0. The final
+reported metric is the mean estimate across samples.
+
+Contains both the estimated value itself as well as the standard error
+of that estimate, which can be extracted with `val` and `stderror`,
+respectively.
+"""
+struct MeanEventDuration{N, L, T <: Period} <: ReliabilityMetric
+    duration::MeanEstimate
+
+    function MeanEventDuration{N,L,T}(duration::MeanEstimate) where {N,L,T<:Period}
+        val(duration) >= 0 || throw(DomainError(val(duration),
+            "$(val(duration)) is not a valid expected event duration"))
+        new{N,L,T}(duration)
+    end
+end
+
+val(x::MeanEventDuration) = val(x.duration)
+stderror(x::MeanEventDuration) = stderror(x.duration)
+
+function Base.show(io::IO, x::MeanEventDuration{N,L,T}) where {N,L,T}
+    t_symbol = unitsymbol(T)
+    print(io, "MeanEventDuration = ", x.duration, " ",
+          L == 1 ? t_symbol : "(" * string(L) * t_symbol * ")")
+end
