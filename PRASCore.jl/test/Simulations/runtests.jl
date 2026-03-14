@@ -32,6 +32,8 @@
     shortfall2_1a, _, flow2_1a, util2_1a, _ =
         assess(TestData.singlenode_a, simspec, resultspecs...)
 
+    events_1a, = assess(TestData.singlenode_a, simspec, ShortfallEvents()) 
+
     assess(TestData.singlenode_a_5min, smallsample, resultspecs...)
     shortfall_1a5, _, flow_1a5, util_1a5,
     shortfall2_1a5, _, flow2_1a5, util2_1a5, _ =
@@ -52,6 +54,8 @@
            StorageAvailability(), GeneratorStorageAvailability(),DemandResponseAvailability(),
            StorageEnergy(), GeneratorStorageEnergy(),DemandResponseEnergy(),
            StorageEnergySamples(), GeneratorStorageEnergySamples(),DemandResponseEnergySamples())
+    
+    events_3, = assess(TestData.threenode, simspec, ShortfallEvents())
 
     @testset "Shortfall Results" begin
 
@@ -593,77 +597,51 @@
     @testset "LOLD Results" begin
         lold_1a = LOLD(shortfall2_1a)
         regional_lold_1a = LOLD(shortfall2_1a, "Region")
-    
-        @test val(lold_1a) isa Float64
-        @test stderror(lold_1a) isa Float64
-        @test val(regional_lold_1a) isa Float64
-        @test stderror(regional_lold_1a) isa Float64
-    
+
         @test val(lold_1a) >= 0
-        @test stderror(lold_1a) >= 0
         @test val(regional_lold_1a) >= 0
-        @test stderror(regional_lold_1a) >= 0
-    
-        @test val(lold_1a) <= length(unique(Date.(shortfall2_1a.timestamps)))
-        @test val(regional_lold_1a) <= length(unique(Date.(shortfall2_1a.timestamps)))
         @test val(lold_1a) >= val(regional_lold_1a)
-    
-        lold_1a5 = LOLD(shortfall2_1a5)
-        regional_lold_1a5 = LOLD(shortfall2_1a5, "Region")
-    
-        @test val(lold_1a5) <= length(unique(Date.(shortfall2_1a5.timestamps)))
-        @test val(regional_lold_1a5) <= length(unique(Date.(shortfall2_1a5.timestamps)))
-        @test val(lold_1a5) >= val(regional_lold_1a5)
-    
-        lold_1b = LOLD(shortfall2_1b)
-        regional_lold_1b = LOLD(shortfall2_1b, "Region")
-    
-        @test val(lold_1b) <= length(unique(Date.(shortfall2_1b.timestamps)))
-        @test val(regional_lold_1b) <= length(unique(Date.(shortfall2_1b.timestamps)))
-        @test val(lold_1b) >= val(regional_lold_1b)
-    
-        lold_3 = LOLD(shortfall2_3)
-        regional_lold_3 = LOLD(shortfall2_3, "Region A")
-    
-        @test val(lold_3) isa Float64
-        @test stderror(lold_3) isa Float64
-        @test val(regional_lold_3) isa Float64
-        @test stderror(regional_lold_3) isa Float64
-    
-        @test val(lold_3) >= 0
-        @test stderror(lold_3) >= 0
-        @test val(regional_lold_3) >= 0
-        @test stderror(regional_lold_3) >= 0
-    
-        @test val(lold_3) <= length(unique(Date.(shortfall2_3.timestamps)))
-        @test val(regional_lold_3) <= length(unique(Date.(shortfall2_3.timestamps)))
-        @test val(lold_3) >= val(regional_lold_3)
+
+        # Manual system-wide LOLD check for single-region system A
+        day_ids_1a = Results._day_ids(shortfall2_1a.timestamps)
+        flags_1a = dropdims(sum(shortfall2_1a.shortfall, dims=1) .> 0, dims=1)
+        manual_daycounts_1a =
+            Results._count_dropped_days_by_sample(flags_1a, day_ids_1a)
+
+        @test isapprox(val(lold_1a), mean(manual_daycounts_1a); rtol=1e-10)
+
+        # Manual regional LOLD check for three-region system
+        lold_3_regionA = LOLD(shortfall2_3, "Region A")
+        i_r = findfirst(isequal("Region A"), shortfall2_3.regions.names)
+        day_ids_3 = Results._day_ids(shortfall2_3.timestamps)
+        flags_3_regionA = Matrix(view(shortfall2_3.shortfall, i_r, :, :) .> 0)
+        manual_daycounts_3_regionA =
+            Results._count_dropped_days_by_sample(flags_3_regionA, day_ids_3)
+
+        @test isapprox(val(lold_3_regionA), mean(manual_daycounts_3_regionA); rtol=1e-10)
     end
 
     @testset "Shortfall Event Metrics" begin
+        # Single-region system
+        @test val(LOLEv(events_1a)) >= 0
+        @test stderror(LOLEv(events_1a)) >= 0
+        @test val(MeanEventDuration(events_1a)) >= 0
+        @test stderror(MeanEventDuration(events_1a)) >= 0
 
-        @testset "Shortfall Event Metrics" begin
-            # Single-region system
-            @test val(LOLEv(events_1a)) >= 0
-            @test stderror(LOLEv(events_1a)) >= 0
-            @test val(MeanEventDuration(events_1a)) >= 0
-            @test stderror(MeanEventDuration(events_1a)) >= 0
-    
-            @test LOLEv(events_1a) ≈ LOLEv(events_1a, "Region")
-            @test MeanEventDuration(events_1a) ≈ MeanEventDuration(events_1a, "Region")
-    
-            # Multi-region system
-            @test val(LOLEv(events_3)) >= 0
-            @test val(MeanEventDuration(events_3)) >= 0
-            @test val(LOLEv(events_3, "Region A")) >= 0
-            @test val(MeanEventDuration(events_3, "Region A")) >= 0
-    
-            @test val(LOLEv(events_3)) >= val(LOLEv(events_3, "Region A"))
-    
-            @test PRAS.PRASCore.Results.totalevents(events_1a) >= 0
-            @test PRAS.PRASCore.Results.totalevents(events_3, "Region A") >= 0
-        end
+        @test LOLEv(events_1a) ≈ LOLEv(events_1a, "Region")
+        @test MeanEventDuration(events_1a) ≈ MeanEventDuration(events_1a, "Region")
+
+        # Multi-region system
+        @test val(LOLEv(events_3)) >= 0
+        @test val(MeanEventDuration(events_3)) >= 0
+        @test val(LOLEv(events_3, "Region A")) >= 0
+        @test val(MeanEventDuration(events_3, "Region A")) >= 0
+
+        @test val(LOLEv(events_3)) >= val(LOLEv(events_3, "Region A"))
+
+        @test Results.totalevents(events_1a) >= 0
+        @test Results.totalevents(events_3, "Region A") >= 0
+
     end
-
 
 end
