@@ -630,6 +630,38 @@
 
         @test LOLEv(events_1a) ≈ LOLEv(events_1a, "Region")
         @test MeanEventDuration(events_1a) ≈ MeanEventDuration(events_1a, "Region")
+        @test MaxEventDuration(events_1a) ≈ MaxEventDuration(events_1a, "Region")
+        @test MeanEventEnergy(events_1a) ≈ MeanEventEnergy(events_1a, "Region")
+        @test MaxEventEnergy(events_1a) ≈ MaxEventEnergy(events_1a, "Region")
+
+        manual_lolev_1a = mean(length.(events_1a.system_events))
+        @test isapprox(val(LOLEv(events_1a)), manual_lolev_1a; rtol=1e-10)
+
+        manual_meandur_1a = mean([
+            isempty(evts) ? 0.0 : mean(Results.duration_periods.(evts))
+            for evts in events_1a.system_events
+        ])
+        @test isapprox(val(MeanEventDuration(events_1a)), manual_meandur_1a; rtol=1e-10)
+
+        manual_maxdur_1a = mean([
+            isempty(evts) ? 0.0 : maximum(Results.duration_periods.(evts))
+            for evts in events_1a.system_events
+        ])
+        @test isapprox(val(MaxEventDuration(events_1a)), manual_maxdur_1a; rtol=1e-10)
+
+        p2e_1a = PRASCore.Systems.conversionfactor(1, Hour, PRASCore.Systems.MW, PRASCore.Systems.MWh)
+
+        manual_meanenergy_1a = mean([
+            isempty(evts) ? 0.0 : mean(p2e_1a .* Results.event_energy.(evts))
+            for evts in events_1a.system_events
+        ])
+        @test isapprox(val(MeanEventEnergy(events_1a)), manual_meanenergy_1a; rtol=1e-10)
+
+        manual_maxenergy_1a = mean([
+            isempty(evts) ? 0.0 : maximum(p2e_1a .* Results.event_energy.(evts))
+            for evts in events_1a.system_events
+        ])
+        @test isapprox(val(MaxEventEnergy(events_1a)), manual_maxenergy_1a; rtol=1e-10)
 
         # Multi-region system
         @test val(LOLEv(events_3)) >= 0

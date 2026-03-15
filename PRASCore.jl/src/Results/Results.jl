@@ -13,7 +13,8 @@ import ..Systems: SystemModel, ZonedDateTime, Period,
 export
 
     # Metrics
-    ReliabilityMetric, LOLE, EUE, NEUE, LOLD, LOLEv, MeanEventDuration,
+    ReliabilityMetric, LOLE, EUE, NEUE, LOLD, LOLEv, 
+    MeanEventDuration, MaxEventDuration, MeanEventEnergy, MaxEventEnergy, 
     val, stderror,
 
     # Result specifications
