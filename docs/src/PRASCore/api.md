@@ -46,4 +46,7 @@ PRASCore.Results.LOLD
 PRASCore.Results.ShortfallEvents
 PRASCore.Results.LOLEv
 PRASCore.Results.MeanEventDuration
+PRASCore.Results.MaxEventDuration
+PRASCore.Results.MeanEventEnergy
+PRASCore.Results.MaxEventEnergy
 ```
