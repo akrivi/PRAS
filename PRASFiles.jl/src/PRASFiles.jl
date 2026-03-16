@@ -2,9 +2,15 @@ module PRASFiles
 
 import PRASCore.Systems: SystemModel, Regions, Interfaces,
                          Generators, Storages, GeneratorStorages, DemandResponses, Lines,
-                         timeunits, powerunits, energyunits, unitsymbol
+                         timeunits, powerunits, energyunits, unitsymbol, conversionfactor
 
-import PRASCore.Results: EUE, LOLE, NEUE, ShortfallResult, ShortfallSamplesResult, AbstractShortfallResult, Result
+import PRASCore.Results:
+    EUE, LOLE, NEUE, LOLEv,
+    MeanEventDuration, MaxEventDuration,
+    MeanEventEnergy, MaxEventEnergy,
+    ShortfallResult, ShortfallSamplesResult, ShortfallEventsResult,
+    ShortfallEvent,
+    AbstractShortfallResult, Result, totalevents
 import StatsBase: mean
 import Dates: @dateformat_str, format, now
 import TimeZones: ZonedDateTime
@@ -18,6 +24,7 @@ import JSON3: pretty
 
 export savemodel
 export saveshortfall
+export saveevents
 export read_attrs
 
 include("Systems/read.jl")
