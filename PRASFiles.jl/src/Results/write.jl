@@ -104,13 +104,22 @@ end
 
 function generate_eventresult(
     events::ShortfallEventsResult{N,L,T,P,E},
-    pras_sys::SystemModel,
+    pras_sys::SystemModel;
+    include_events::Bool = false,
 ) where {N,L,T,P,E}
 
     p2e = conversionfactor(L, T, P, E)
 
+    system_event_records = include_events ?
+        get_eventrecords(events.system_events, events.timestamps, p2e) :
+        EventRecord[]
+
     region_results = RegionEventResult[]
     for reg_name in pras_sys.regions.names
+        region_event_records = include_events ?
+            get_eventrecords(events, reg_name) :
+            EventRecord[]
+
         push!(region_results,
             RegionEventResult(
                 reg_name,
@@ -120,7 +129,7 @@ function generate_eventresult(
                 MeanEventEnergyResult(events, region = reg_name),
                 MaxEventEnergyResult(events, region = reg_name),
                 totalevents(events, reg_name),
-                get_eventrecords(events, reg_name),
+                region_event_records,
             )
         )
     end
@@ -136,7 +145,7 @@ function generate_eventresult(
         MeanEventEnergyResult(events),
         MaxEventEnergyResult(events),
         totalevents(events),
-        get_eventrecords(events.system_events, events.timestamps, p2e),
+        system_event_records,
         region_results,
     )
 
@@ -162,11 +171,18 @@ metrics and raw event records.
 # Returns
 
   - Location where the event results are exported in JSON format.
+
+# Keywords
+
+    - `include_events::Bool = false`: If `true`, include full raw event records
+    at the system and regional levels. If `false`, only summary event metrics
+    and counts are exported.
 """
 function saveevents(
     events::ShortfallEventsResult,
     pras_sys::SystemModel,
-    outfile::String,
+    outfile::String;
+    include_events::Bool = false,
 )
 
     dt_now = format(now(), "dd-u-yy-H-M-S")
@@ -175,7 +191,7 @@ function saveevents(
         mkpath(export_location)
     end
 
-    event_result = generate_eventresult(events, pras_sys)
+    event_result = generate_eventresult(events, pras_sys; include_events = include_events)
     open(joinpath(export_location, "pras_event_results.json"), "w") do io
         pretty(io, event_result)
     end
@@ -187,7 +203,8 @@ end
 function saveevents(
     events::R,
     pras_sys::SystemModel,
-    outfile::String,
+    outfile::String;
+    include_events::Bool = false,
 ) where {R <: Result}
 
     error("saveevents is not implemented for $(typeof(events))")
